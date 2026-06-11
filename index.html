@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💸</text></svg>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בואו חשבון</title>
+    <style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+        :root {
+            --bg-color: #fdfcf7; /* רקע שמנת-צהבהב חמים ורך */
+            --card-bg: #ffffff;
+            --primary-amber: #d97706; /* צהוב-אמבר כהה ואלגנטי */
+            --light-yellow: #fef9c3; /* צהוב בהיר עדין */
+            --border-yellow: #fef08a; /* גבול צהוב עדין */
+            --text-dark: #334155;
+            --border-color: #f1f5f9;
+            --shadow-sm: 0 2px 6px rgba(217, 119, 6, 0.05), 0 1px 2px rgba(0,0,0,0.02);
+            --shadow-md: 0 10px 20px rgba(217, 119, 6, 0.06), 0 4px 10px rgba(0,0,0,0.03);
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 25px 15px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto 15px auto;
+        }
+
+        h1 {
+            color: #1e293b;
+            margin: 0;
+            font-size: 1.6rem;
+        }
+
+        .btn-main-add {
+            background-color: var(--primary-amber);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(217, 119, 6, 0.2);
+            transition: all 0.2s ease;
+        }
+        .btn-main-add:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(217, 119, 6, 0.3);
+        }
+
+        .month-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .month-divider {
+            border: none;
+            height: 1px;
+            background: linear-gradient(to left, transparent, #e2e8f0, transparent);
+            margin: 30px 0 15px 0;
+        }
+
+        .month-summary-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+
+        .month-name-input {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #0f172a;
+            border: 1px solid transparent;
+            background: transparent;
+            border-radius: 6px;
+            padding: 4px 8px;
+            width: 180px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .month-name-input:focus {
+            background: white;
+            border-color: #cbd5e1;
+            box-shadow: var(--shadow-sm);
+            outline: none;
+        }
+
+        .month-totals {
+            display: flex;
+            gap: 20px;
+            font-size: 1rem;
+            background: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 30px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid #e2e8f0;
+        }
+
+        .text-income { color: #16a34a; font-weight: bold; }
+        .text-expense { color: #b45309; font-weight: bold; }
+        .balance-positive { color: #16a34a; font-weight: bold; }
+        .balance-negative { color: #dc2626; font-weight: bold; }
+
+        .btn-delete-month {
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid #e2e8f0;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        .btn-delete-month:hover {
+            color: #dc2626;
+            border-color: #fca5a5;
+            background-color: #fef2f2;
+        }
+
+        .month-blocks-row {
+            display: flex;
+            flex-direction: row;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            align-items: flex-start;
+        }
+
+        /* בלוקי המכולות הראשיים - גווני צהוב עדינים להוצאות */
+        .block-wrapper {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            min-width: 210px;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 2px solid #f8fafc;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .block-title-area {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .block-title-input {
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: 1px solid transparent;
+            background: transparent;
+            width: 100px;
+            color: inherit;
+        }
+        .block-title-input:focus {
+            background: white;
+            border-color: #cbd5e1;
+            outline: none;
+        }
+
+        .block-badge {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        .cards-flex-container {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+        }
+
+        /* ///// 1. צמצום הריבועים למבנה מינימליסטי וקומפקטי */
+        .small-card {
+            background: #fafaf9;
+            border: 1px solid #e7e5e4;
+            border-radius: 8px;
+            padding: 6px;
+            width: 135px; /* כיווץ רוחב משמעותי */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .small-card:hover {
+            background: #ffffff;
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-amber);
+        }
+
+        .card-row {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            position: relative;
+        }
+
+        /* שדות קלט מוקטנים */
+        .card-input {
+            border: 1px solid transparent;
+            background: transparent;
+            padding: 2px 4px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .card-input:focus {
+            background: white;
+            border-color: #cbd5e1;
+            outline: none;
+        }
+        .card-input-name { font-weight: 600; color: #1e293b; }
+        
+        /* 1. מיקום הסכום מתחת לכותרת/שם */
+        .card-input-amount { font-weight: 700; font-size: 0.85rem; text-align: left; dir: ltr; color: #0f172a; }
+        .card-input-notes { font-size: 0.7rem; color: #78716c; border-bottom: 1px dashed #e7e5e4; }
+
+        .currency-indicator {
+            font-size: 0.75rem;
+            color: #a8a29e;
+            font-weight: bold;
+        }
+
+        .btn-card-delete {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 15px;
+            height: 15px;
+            font-size: 9px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .small-card:hover .btn-card-delete { display: flex; }
+
+        /* מתג בלוטוס זעיר וללא כיתוב */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 22px;
+            height: 13px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #d6d3d1; transition: .15s; border-radius: 10px;
+        }
+        .toggle-switch input:checked + .slider { background-color: var(--primary-amber); }
+        .slider:before {
+            position: absolute; content: ""; height: 9px; width: 9px; left: 2px; bottom: 2px;
+            background-color: white; transition: .15s; border-radius: 50%;
+        }
+        .toggle-switch input:checked + .slider:before { transform: translateX(9px); }
+
+        /* החרגה קטנה בתחתית */
+        .exclusion-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e7e5e4;
+            border-radius: 4px;
+            padding: 2px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+            color: #57534e;
+        }
+        .exclusion-box input { margin: 0 0 0 3px; cursor: pointer; transform: scale(0.8); }
+
+        .card-excluded {
+            opacity: 0.4;
+            background: #f5f5f4;
+            text-decoration: line-through;
+        }
+
+        /* לחצן פלוס קטן להוספת פריט */
+        .btn-block-add-item {
+            background: #f5f5f4;
+            color: #78716c;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            width: 40px;
+            min-height: 80px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .btn-block-add-item:hover {
+            background: #e7e5e4;
+            color: var(--primary-amber);
+            border-color: var(--primary-amber);
+        }
+
+        .btn-add-category-box {
+            border: 2px dashed #d97706;
+            border-radius: 12px;
+            min-width: 160px;
+            min-height: 110px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-amber);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+        }
+        .btn-add-category-box:hover {
+            background: #ffffff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ///// 4. פאנל בחירת אימוג'ים מהירה מובנה בריבוע (ללא כיתוב) */
+        .card-emoji-disp {
+            cursor: pointer;
+            padding: 2px;
+            border-radius: 4px;
+            transition: background 0.1s;
+            font-size: 0.9rem;
+            user-select: none;
+        }
+        .card-emoji-disp:hover { background: #e7e5e4; }
+
+        .emoji-picker-popover {
+            position: absolute;
+            top: 24px; right: 0;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-shadow: var(--shadow-md);
+            padding: 6px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            z-index: 100;
+            width: 140px;
+        }
+        .emoji-option {
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            padding: 2px;
+            border-radius: 4px;
+            transition: transform 0.1s;
+        }
+        .emoji-option:hover {
+            background: #fef08a;
+            transform: scale(1.15);
+        }
+
+        .hidden-pane { display: none !important; }
+        .hidden-switch { visibility: hidden; }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: rgba(15, 23, 42, 0.2);
+            backdrop-filter: blur(1px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-box { background: white; padding: 15px; border-radius: 10px; width: 260px; box-shadow: var(--shadow-md); }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; }
+        .btn-confirm { background: #ef4444; color: white; border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-weight: bold;}
+        .btn-cancel { background: #f1f5f9; color: #475569; border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; }
+  
+/* כיווץ אגרסיבי ומקצועי לגובה של כל חודש */
+.month-section-wrapper {
+    margin-bottom: 8px !important;
+    padding: 6px 12px !important;
+}
+
+.month-divider {
+    margin: 6px 0 !important;
+    opacity: 0.4;
+}
+
+.month-summary-bar {
+    margin-bottom: 6px !important;
+    padding: 4px 8px !important;
+}
+
+.month-blocks-row {
+    gap: 8px !important;
+    padding-bottom: 4px !important;
+}
+
+.block-wrapper {
+    padding: 6px 8px !important;
+}
+
+.small-card {
+    padding: 4px 6px !important;
+    margin-bottom: 4px !important;
+}
+
+.card-row {
+    margin-bottom: 3px !important;
+}
+
+.exclusion-box {
+    margin-top: 3px !important;
+    padding: 1px 0 !important;
+    font-size: 0.65rem !important;
+}
+
+/* העלמה מוחלטת של פסי הגלילה בין החודשים */
+.month-blocks-row {
+    overflow-x: auto !important;
+    scrollbar-width: none !important; /* פיירפוקס */
+    -ms-overflow-style: none !important;  /* אדג' */
+}
+
+.month-blocks-row::-webkit-scrollbar {
+    display: none !important; /* כרום, ספארי, אופרה */
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* עיבוי והדגשה של הקו הקיים בין החודשים */
+.month-divider {
+    border: none !important;
+    height: 3px !important;            /* עובי הקו - הגדלנו ל-3 פיקסלים */
+    background-color: #cbd5e1 !important; /* צבע אפור נוכח וברור יותר */
+    margin: 5px 0 !important;          /* מרווח אסתטי מעל ומתחת לקו */
+    opacity: 1 !important;              /* ביטול שקיפות כדי שיראה בולט */
+}
+
+/* עיצוב מסך הנעילה הגלובלי */
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #0f172a; /* צבע רקע כהה מודרני (Slate-900) */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999; /* מבטיח שזה יהיה מעל כל אלמנט אחר באתר */
+    direction: rtl;
+}
+
+/* קופסת תיבת הסיסמה הלבנה במרכז */
+.login-box {
+    background: #ffffff;
+    padding: 35px 25px;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 360px;
+    width: 90%;
+}
+
+.login-box h2 {
+    margin: 0 0 10px 0;
+    color: #1e293b;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.login-box p {
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+/* שדה קלט הסיסמה */
+.login-box input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 6px; /* נותן מרווח אסתטי בין הניקודות של הסיסמה */
+    margin-bottom: 16px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.login-box input:focus {
+    outline: none;
+    border-color: #3b82f6; /* הופך לכחול בזמן כתיבה */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* כפתור כניסה */
+.btn-login {
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.btn-login:hover {
+    background: #1d4ed8;
+}
+
+/* הודעת שגיאה */
+.login-error {
+    color: #dc2626;
+    font-size: 13px;
+    margin-top: 15px;
+    min-height: 20px; /* שומר מקום קבוע שלא יקפיץ את התיבה */
+    font-weight: 600;
+}
+  </style>
+</head>
+<body>
+
+
+<div id="loginOverlay" class="login-overlay">
+    <div class="login-box">
+        <h2>🔒 כניסה מאובטחת</h2>
+        <p>האפליקציה בענן. אנא התחבר עם חשבון Google המורשה שלך:</p>
+        
+        <button onclick="loginWithGoogle()" style="background: white; color: #333; border: 1px solid #ccc; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; margin-top: 20px; transition: 0.2s;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_Color_Sign-In_Logo.svg" alt="Google" style="width:20px; margin-left:10px;">
+            התחבר באמצעות Google
+        </button>
+    </div>
+</div>
+
+    <header>
+        <h1>✨ כלי תקציב משפחתי חכם</h1>
+        <button class="btn-main-add" onclick="createNewMonth()">+ הוסף חודש חדש</button>
+    </header>
+
+    <main id="appMonthsContainer" class="month-container"></main>
+
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-box">
+            <h4 style="margin-top:0; color:#1e293b;">אישור מחיקה מהירה</h4>
+            <p style="color:#64748b; font-size:0.85rem; margin-bottom:0;">האם למחוק פריט זה מהמערכת?</p>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeDeleteModal()">ביטול</button>
+                <button class="btn-confirm" id="confirmDeleteBtn">מחק</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. הגדרת הנתונים - חייב להיות ראשון בקוד!
+        let appState = {
+            months: [],
+            globalExpandedCategories: {},
+            globalIncomesExpanded: true
+        };
+
+// 1. הגדרות החיבור האישיות שלך לענן של גוגל
+const firebaseConfig = {
+  apiKey: "AIzaSyBXwX3fav-ffBJhULe-AO1FF_wy6R6QY54",
+  authDomain: "my-family-budget-ba93c.firebaseapp.com",
+  databaseURL: "https://my-family-budget-ba93c-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "my-family-budget-ba93c",
+  storageBucket: "my-family-budget-ba93c.firebasestorage.app",
+  messagingSenderId: "1037080642373",
+  appId: "1:1037080642373:web:1bbc0c553e3b8fb48bf42c"
+};
+
+// 2. אתחול Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+const auth = firebase.auth();
+
+// 3. הגדרת משתנה הנתונים הראשי של האפליקציה
+let appState = {
+    months: [],
+    globalExpandedCategories: {},
+    globalIncomesExpanded: true,
+    activeEmojiPicker: null
+};
+
+// 4. פונקציית התחברות עם גוגל (מופעלת בלחיצת כפתור)
+function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(error => {
+        console.error("שגיאה בהתחברות לגוגל:", error);
+        alert("שגיאת התחברות: " + error.message);
+    });
+}
+
+// 5. "השומר" של גוגל - בודק אוטומטית מי מחובר בכל רגע
+auth.onAuthStateChanged(user => {
+    const overlay = document.getElementById('loginOverlay');
+    if (user) {
+        // רשימת המיילים שמורשים להיכנס לתקציב (החלף למיילים האמיתיים שלכם!)
+        const allowedEmails = ["your_email@gmail.com", "wife_email@gmail.com"];
+        
+        if (allowedEmails.includes(user.email.toLowerCase())) {
+            overlay.style.display = 'none'; // מעלימים את מסך הנעילה
+            startLiveSync(); // מתחילים לסנכרן נתונים בשידור חי מהענן!
+        } else {
+            alert("⚠️ חשבון גוגל זה (" + user.email + ") אינו מורשה לצפות בתקציב זה.");
+            auth.signOut();
+        }
+    } else {
+        overlay.style.display = 'flex'; // מציגים את מסך הנעילה אם המשתמש התנתק
+    }
+});
+
+// 6. סנכרון חי בזמן אמת (Real-time Sync)
+function startLiveSync() {
+    // הפונקציה הזו מקשיבה לענן. ברגע שאשתך תעדכן משהו, המסך שלך יתעדכן לבד!
+    database.ref('family_budget').on('value', (snapshot) => {
+        const cloudData = snapshot.val();
+        if (cloudData) {
+            appState = cloudData;
+        }
+        // הרצת הציור של האפליקציה עם הנתונים הטריים מהענן
+        if (typeof renderApp === 'function') {
+            renderApp();
+        }
+    });
+}
+
+// 7. פונקציית שמירה חדשה - קרא לה בכל פעם שיש שינוי בנתונים בקוד שלך!
+function saveDataToCloud() {
+    database.ref('family_budget').set(appState).catch(error => {
+        console.error("שגיאה בשמירת הנתונים לענן:", error);
+    });
+}
+        
+        ///// רשימת האימוג'ים המורחבת והמדויקת לפי בקשתך (ללא כיתוב)
+        const EMOJI_LIST = [
+            '💰', '🏢', '📈', '🚀', '🌙', '📜', '🎓', // הכנסות, עסק, צדדי, קצבה, מלגה
+            '💳', '🪪', '💵', '💸', // אשראי צבעים, מזומן
+            '🏠', '🏗️', '🛠️', '🏦', '🏛️', '🧾', // משכנתאות, שיפוץ, הלוואות, חוב
+            '✈️', '🏖️', '🧳', '📚', '🚗', '🛵', // חופש, לימודים, רכב
+            '🧠', '🗣️', '💇‍♂️', '💅', '💈', '💄', // טיפול רגשי, יופי, ספר, לייזר
+            '📦', '🛍️', '🛒', '🤲', '💝', '🐷', '🔒', '👶', '🏫', '🧸', '📉' // כללי, תרומה, חיסכון, מוסדות ילדים
+        ];
+
+function saveToStorage() {
+    // במקום הזיכרון של הדפדפן - שומרים ישירות ובזמן אמת לענן של גוגל!
+    database.ref('family_budget').set(appState).catch(error => {
+        console.error("שגיאה בשמירת הנתונים לענן:", error);
+    });
+}
+
+        function createMonthObject(name) {
+            return {
+                id: 'month_' + Date.now() + Math.random().toString(36).substr(2, 4),
+                name: name, incomes: [], categories: []
+            };
+        }
+
+function createNewMonth() {
+            const monthNames = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+            let nextName = "חודש חדש";
+            
+            if (appState.months.length > 0) {
+                const lastMonth = appState.months[0];
+                const parts = lastMonth.name.split(' ');
+                if (parts.length === 2) {
+                    let idx = monthNames.indexOf(parts[0]);
+                    let year = parseInt(parts[1]);
+                    if (idx !== -1) {
+                        idx++;
+                        if (idx >= 12) { idx = 0; year++; }
+                        nextName = `${monthNames[idx]} ${year}`;
+                    }
+                }
+            }
+
+            const newMonth = {
+                id: 'm_' + Math.random().toString(36).substr(2, 5),
+                name: nextName,
+                incomes: [],
+                categories: []
+            };
+
+            if (appState.months.length > 0) {
+                const previousMonth = appState.months[0];
+
+                // 1. העתקת הכנסות קבועות
+                previousMonth.incomes.forEach(inc => {
+                    if (inc.isNamePermanent) {
+                        newMonth.incomes.push({
+                            id: 'inc_' + Math.random().toString(36).substr(2, 5),
+                            emoji: inc.emoji, name: inc.name,
+                            amount: inc.isAmountPermanent ? inc.amount : 0,
+                            notes: inc.notes, isNamePermanent: inc.isNamePermanent,
+                            isAmountPermanent: inc.isAmountPermanent, isExcluded: inc.isExcluded
+                        });
+                    }
+                });
+
+                // 2. העתקה אוטומטית של *כל* הקטגוריות (ללא תלות בצ'קבוקס)
+                previousMonth.categories.forEach(cat => {
+                    const newCat = {
+                        id: 'cat_' + Math.random().toString(36).substr(2, 5),
+                        emoji: cat.emoji, name: cat.name, notes: cat.notes,
+                        isNamePermanent: true, expenses: []
+                    };
+
+                    // העתקת הוצאות פנימיות שסומנו כקבועות
+                    cat.expenses.forEach(exp => {
+                        if (exp.isNamePermanent) {
+                            newCat.expenses.push({
+                                id: 'exp_' + Math.random().toString(36).substr(2, 5),
+                                emoji: exp.emoji, name: exp.name,
+                                amount: exp.isAmountPermanent ? exp.amount : 0,
+                                notes: exp.notes, isNamePermanent: exp.isNamePermanent,
+                                isAmountPermanent: exp.isAmountPermanent, isExcluded: exp.isExcluded
+                            });
+                        }
+                    });
+
+                    newMonth.categories.push(newCat);
+                });
+            }
+
+            appState.months.unshift(newMonth);
+            saveToStorage();
+            renderApp();
+        }
+
+        function setItemProp(monthId, type, itemId, prop, value, categoryId = null) {
+            const month = appState.months.find(m => m.id === monthId);
+            if (!month) return;
+
+            let item = null;
+            if (type === 'income') {
+                item = month.incomes.find(i => i.id === itemId);
+            } else if (type === 'expense' && categoryId) {
+                const cat = month.categories.find(c => c.id === categoryId);
+                if (cat) item = cat.expenses.find(e => e.id === itemId);
+            } else if (type === 'category') {
+                item = month.categories.find(c => c.id === itemId);
+                // 2. אם שם הקטגוריה השתנה, נשמור את מצב ההרחבה הישן תחת השם החדש
+                if(prop === 'name') {
+                    const oldName = item.name;
+                    appState.globalExpandedCategories[value] = appState.globalExpandedCategories[oldName] || false;
+                }
+            }
+
+            if (item) {
+                item[prop] = value;
+                saveToStorage();
+            }
+        }
+
+        function updateMonthName(monthId, value) {
+            const month = appState.months.find(m => m.id === monthId);
+            if (month) {
+                month.name = value;
+                saveToStorage();
+            }
+        }
+
+        function recalculateMonthTotals(monthId) {
+            const month = appState.months.find(m => m.id === monthId);
+            if (!month) return;
+
+            let totalIncome = 0;
+            let totalExpenses = 0;
+
+            month.incomes.forEach(inc => { if (!inc.isExcluded) totalIncome += inc.amount; });
+            month.categories.forEach(cat => {
+                let catSum = 0;
+                cat.expenses.forEach(exp => {
+                    if (!exp.isExcluded) totalExpenses += exp.amount;
+                    catSum += exp.amount;
+                });
+                const catBadge = document.getElementById(`badge-cat-${cat.id}`);
+                if (catBadge) catBadge.innerText = `₪${catSum.toLocaleString()}`;
+            });
+
+            const balance = totalIncome - totalExpenses;
+
+            const incEl = document.getElementById(`total-inc-${monthId}`);
+            const expEl = document.getElementById(`total-exp-${monthId}`);
+            const balEl = document.getElementById(`total-bal-${monthId}`);
+
+            if (incEl) incEl.innerText = `₪${totalIncome.toLocaleString()}`;
+            if (expEl) expEl.innerText = `₪${totalExpenses.toLocaleString()}`;
+            if (balEl) {
+                balEl.innerText = `₪${balance.toLocaleString()}`;
+                balEl.className = balance >= 0 ? 'balance-positive' : 'balance-negative';
+            }
+            
+            const incBadge = document.getElementById(`badge-inc-${monthId}`);
+            if (incBadge) incBadge.innerText = `₪${totalIncome.toLocaleString()}`;
+            
+            saveToStorage();
+        }
+
+        function addNewItemInline(monthId, type, categoryId = null) {
+            const month = appState.months.find(m => m.id === monthId);
+            if (!month) return;
+
+            const newItem = {
+                id: (type === 'income' ? 'inc_' : 'exp_') + Math.random().toString(36).substr(2, 5),
+                emoji: type === 'income' ? '💰' : '🛒',
+                name: '', amount: 0, notes: '',
+                isNamePermanent: false, isAmountPermanent: false, isExcluded: false
+            };
+
+            if (type === 'income') {
+                month.incomes.push(newItem);
+            } else if (type === 'expense' && categoryId) {
+                const cat = month.categories.find(c => c.id === categoryId);
+                if (cat) cat.expenses.push(newItem);
+            }
+            
+            saveToStorage();
+            renderApp();
+        }
+
+        function addNewCategoryInline(monthId) {
+            const month = appState.months.find(m => m.id === monthId);
+            if (!month) return;
+
+            const defName = 'קטגוריה';
+            appState.globalExpandedCategories[defName] = true; // פתוח גלובלית כברירת מחדל
+
+            month.categories.push({
+                id: 'cat_' + Math.random().toString(36).substr(2, 5),
+                emoji: '📦', name: defName, notes: '', isNamePermanent: false, expenses: []
+            });
+
+            saveToStorage();
+            renderApp();
+        }
+
+        /* ///// 2. לוגיקת שינוי הרחבה/צמצום גלובלית לכל החודשים */
+        function toggleIncomeExpandGlobal(event) {
+            if(event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON') return;
+            appState.globalIncomesExpanded = !appState.globalIncomesExpanded;
+            saveToStorage();
+            renderApp();
+        }
+
+        function toggleCategoryExpandGlobal(catName, event) {
+            if(event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON' || event.target.classList.contains('slider')) return;
+            appState.globalExpandedCategories[catName] = !appState.globalExpandedCategories[catName];
+            saveToStorage();
+            renderApp();
+        }
+
+        /* ///// 4. לוגיקת פתיחה ובחירת אימוג'י מקומי */
+        function triggerEmojiPicker(itemId, event) {
+            event.stopPropagation();
+            if (appState.activeEmojiPicker === itemId) {
+                appState.activeEmojiPicker = null;
+            } else {
+                appState.activeEmojiPicker = itemId;
+            }
+            renderApp();
+        }
+
+        function selectEmojiInline(monthId, type, itemId, selectedEmoji, categoryId = null) {
+            setItemProp(monthId, type, itemId, 'emoji', selectedEmoji, categoryId);
+            appState.activeEmojiPicker = null;
+            renderApp();
+        }
+
+        // סגירת האימוג'י קליקר בלחיצה מחוץ לריבוע
+        document.addEventListener('click', function() {
+            if(appState.activeEmojiPicker) {
+                appState.activeEmojiPicker = null;
+                renderApp();
+            }
+        });
+
+        function openDeleteModal(target) {
+            deleteTarget = target;
+            document.getElementById('deleteModal').style.display = 'flex';
+            document.getElementById('confirmDeleteBtn').onclick = executeDeletion;
+        }
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            deleteTarget = null;
+        }
+        function executeDeletion() {
+            if (!deleteTarget) return;
+            const { type, monthId, categoryId, itemId } = deleteTarget;
+            const month = appState.months.find(m => m.id === monthId);
+
+            if (type === 'month') {
+                appState.months = appState.months.filter(m => m.id !== monthId);
+            } else if (type === 'income') {
+                month.incomes = month.incomes.filter(i => i.id !== itemId);
+            } else if (type === 'category') {
+                month.categories = month.categories.filter(c => c.id !== categoryId);
+            } else if (type === 'expense') {
+                const cat = month.categories.find(c => c.id === categoryId);
+                if (cat) cat.expenses = cat.expenses.filter(e => e.id !== itemId);
+            }
+
+            saveToStorage();
+            closeDeleteModal();
+            renderApp();
+        }
+
+// משתנה עזר ופונקציה לסנכרון הגלילה בין כל החודשים ופס הגלילה התחתון
+        let isSyncingScroll = false;
+        function syncMonthScrolls(e) {
+            if (isSyncingScroll) return;
+            isSyncingScroll = true;
+            const targetScrollLeft = e.target.scrollLeft;
+            
+            // סנכרון כל שורות החודשים
+            const rows = document.querySelectorAll('.month-blocks-row');
+            rows.forEach(row => {
+                if (row !== e.target) row.scrollLeft = targetScrollLeft;
+            });
+            
+            // סנכרון פס הגלילה הקבוע שבתחתית החלון
+            const globalScroll = document.getElementById('globalViewScrollbar');
+            if (globalScroll && globalScroll !== e.target) {
+                globalScroll.scrollLeft = targetScrollLeft;
+            }
+            isSyncingScroll = false;
+        }
+
+        function renderApp() {
+            // שמירת מיקום הגלילה הנוכחי לפני הרינדור
+            const firstRow = document.querySelector('.month-blocks-row');
+            const savedScrollLeft = firstRow ? firstRow.scrollLeft : 0;
+
+            const container = document.getElementById('appMonthsContainer');
+            container.innerHTML = '';
+
+            appState.months.forEach(month => {
+                let totalIncome = 0;
+                let totalExpenses = 0;
+
+                month.incomes.forEach(i => { if (!i.isExcluded) totalIncome += i.amount; });
+                month.categories.forEach(c => {
+                    let catSum = 0;
+                    c.expenses.forEach(e => { 
+                        if (!e.isExcluded) totalExpenses += e.amount; 
+                        catSum += e.amount;
+                    });
+                    c.currentSum = catSum;
+                });
+
+                const balance = totalIncome - totalExpenses;
+                const monthSection = document.createElement('div');
+                monthSection.className = 'month-section-wrapper';
+
+                let monthHtml = `
+                    <hr class="month-divider">
+                    
+                    <div class="month-summary-bar">
+                        <input type="text" class="month-name-input" value="${month.name}" oninput="updateMonthName('${month.id}', this.value)">
+                        
+                        <div class="month-totals">
+                            <div class="total-item">הכנסות: <span class="text-income" id="total-inc-${month.id}">₪${totalIncome.toLocaleString()}</span></div>
+                            <div class="total-item">הוצאות: <span class="text-expense" id="total-exp-${month.id}">₪${totalExpenses.toLocaleString()}</span></div>
+                            <div class="total-item">מאזן: <span id="total-bal-${month.id}" class="${balance >= 0 ? 'balance-positive' : 'balance-negative'}">₪${balance.toLocaleString()}</span></div>
+                        </div>
+
+                        <button class="btn-delete-month" onclick="openDeleteModal({type:'month', monthId:'${month.id}'})">מחק חודש</button>
+                    </div>
+
+                    <div class="month-blocks-row">
+                `;
+
+                // --- בלוק הכנסות ---
+                const isIncExpanded = appState.globalIncomesExpanded !== false;
+                const incHeaderStyle = isIncExpanded 
+                    ? "display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px;" 
+                    : "display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%;";
+
+                monthHtml += `
+                    <div class="block-wrapper" style="border-top: 4px solid #16a34a;">
+                        <div class="block-header" onclick="toggleIncomeExpandGlobal(event)" style="${incHeaderStyle}">
+                            <div class="block-title-area">
+                                <span>💰</span>
+                                <span>הכנסות</span>
+                                <span>${isIncExpanded ? '▲' : '▼'}</span>
+                            </div>
+                            <span class="block-badge" id="badge-inc-${month.id}" style="background:#e2f0d9; color:#385723; margin-left: ${isIncExpanded ? '0' : 'auto'};">₪${totalIncome.toLocaleString()}</span>
+                        </div>
+                        
+                        <div class="cards-flex-container ${isIncExpanded ? '' : 'hidden-pane'}">
+                `;
+
+                if (isIncExpanded) {
+                    month.incomes.forEach(inc => { monthHtml += renderSmallCard(month.id, 'income', inc); });
+                    monthHtml += `<button class="btn-block-add-item" onclick="addNewItemInline('${month.id}', 'income')">+</button>`;
+                }
+
+                monthHtml += `</div></div>`;
+
+                // --- בלוק קטגוריות הוצאות ---
+                month.categories.forEach(cat => {
+                    const isCatExpanded = !!appState.globalExpandedCategories[cat.name];
+                    
+                    const catHeaderStyle = isCatExpanded
+                        ? "display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px; position: relative; padding-left: 22px !important;"
+                        : "display: flex; flex-direction: column; align-items: flex-start; gap: 4px; position: relative; padding-left: 22px !important;";
+
+                    monthHtml += `
+                        <div class="block-wrapper" style="border-top: 4px solid var(--primary-amber); background: #fefce8;">
+                            <div class="block-header" onclick="toggleCategoryExpandGlobal('${cat.name}', event)" style="${catHeaderStyle}">
+                                <div class="block-title-area">
+                                    <span class="card-emoji-disp" onclick="triggerEmojiPicker('${cat.id}', event)">${cat.emoji}</span>
+                                    <input type="text" class="block-title-input" value="${cat.name}" oninput="setItemProp('${month.id}', 'category', '${cat.id}', 'name', this.value)">
+                                    <span>${isCatExpanded ? '▲' : '▼'}</span>
+                                    ${renderEmojiPickerPopover(month.id, 'category', cat.id)}
+                                </div>
+                                
+                                <span class="block-badge" id="badge-cat-${cat.id}" style="background:var(--light-yellow); color:#92400e; margin-left: ${isCatExpanded ? '6px' : 'auto'};">₪${cat.currentSum.toLocaleString()}</span>
+                                
+                                <button class="btn-card-delete" style="position: absolute; top: 50%; transform: translateY(-50%); left: 14px; display: inline-flex; margin: 0;" onclick="openDeleteModal({type:'category', monthId:'${month.id}', categoryId:'${cat.id}'})">×</button>
+                            </div>
+                            
+                            <div class="cards-flex-container ${isCatExpanded ? '' : 'hidden-pane'}">
+                    `;
+
+                    if (isCatExpanded) {
+                        cat.expenses.forEach(exp => { monthHtml += renderSmallCard(month.id, 'expense', exp, cat.id); });
+                        monthHtml += `<button class="btn-block-add-item" onclick="addNewItemInline('${month.id}', 'expense', '${cat.id}')">+</button>`;
+                    }
+
+                    monthHtml += `
+                            </div>
+                        </div>
+                    `;
+                });
+
+                monthHtml += `
+                        <button class="btn-add-category-box" onclick="addNewCategoryInline('${month.id}')">+ קטגוריה חדשה</button>
+                    </div>
+                `;
+
+                monthSection.innerHTML = monthHtml;
+                container.appendChild(monthSection);
+            });
+
+            // החזרת מיקום הגלילה המדויק לכל החודשים וחיבור מאזין הגלילה
+            const rows = document.querySelectorAll('.month-blocks-row');
+            rows.forEach(row => {
+                row.scrollLeft = savedScrollLeft;
+                row.addEventListener('scroll', syncMonthScrolls);
+            });
+
+            // יצירת/עדכון פסי הגלילה הגלובלי המשותף בתחתית החלון לחלוטין
+            let globalScroll = document.getElementById('globalViewScrollbar');
+            if (!globalScroll) {
+                globalScroll = document.createElement('div');
+                globalScroll.id = 'globalViewScrollbar';
+                globalScroll.style = 'position: fixed; bottom: 0; left: 0; right: 0; overflow-x: auto; height: 14px; z-index: 9999; background: #f3f4f6; border-top: 1px solid #e5e7eb;';
+                
+                const spacer = document.createElement('div');
+                spacer.id = 'globalViewScrollSpacer';
+                spacer.style.height = '1px';
+                
+                globalScroll.appendChild(spacer);
+                document.body.appendChild(globalScroll);
+                globalScroll.addEventListener('scroll', syncMonthScrolls);
+            }
+
+            // עדכון דינמי של רוחב הגלילה הפנימי של הפס הגלובלי
+            setTimeout(() => {
+                const latestFirstRow = document.querySelector('.month-blocks-row');
+                const spacer = document.getElementById('globalViewScrollSpacer');
+                if (latestFirstRow && spacer) {
+                    spacer.style.width = latestFirstRow.scrollWidth + 'px';
+                    globalScroll.scrollLeft = latestFirstRow.scrollLeft;
+                }
+            }, 50);
+        }
+
+        /* ///// 1+4. יצירת הריבוע הקומפקטי עם המבנה החדש והאימוג'י קליקר הצף */
+        function renderSmallCard(monthId, type, item, categoryId = null) {
+            const catParam = categoryId ? `'${categoryId}'` : 'null';
+            return `
+                <div class="small-card ${item.isExcluded ? 'card-excluded' : ''}">
+                    <button class="btn-card-delete" onclick="openDeleteModal({type:'${type}', monthId:'${monthId}', categoryId:${catParam}, itemId:'${item.id}'})">×</button>
+                    
+                    <div class="card-row">
+                        <span class="card-emoji-disp" onclick="triggerEmojiPicker('${item.id}', event)">${item.emoji}</span>
+                        
+                        <input type="text" class="card-input card-input-name" placeholder="פריט..." value="${item.name}" 
+                            oninput="setItemProp('${monthId}', '${type}', '${item.id}', 'name', this.value, ${catParam})">
+                        
+                        <label class="toggle-switch" title="שם קבוע">
+                            <input type="checkbox" ${item.isNamePermanent ? 'checked' : ''} 
+                                onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isNamePermanent', this.checked, ${catParam}); renderApp();">
+                            <span class="slider"></span>
+                        </label>
+
+                        ${renderEmojiPickerPopover(monthId, type, item.id, categoryId)}
+                    </div>
+
+                    <div class="card-row">
+                        <span class="currency-indicator">₪</span>
+                        <input type="number" class="card-input card-input-amount" placeholder="0" value="${item.amount || ''}" 
+                            oninput="setItemProp('${monthId}', '${type}', '${item.id}', 'amount', parseFloat(this.value) || 0, ${catParam}); recalculateMonthTotals('${monthId}')">
+                        
+                        <label class="toggle-switch ${!item.isNamePermanent ? 'hidden-switch' : ''}" title="סכום קבוע">
+                            <input type="checkbox" ${item.isAmountPermanent ? 'checked' : ''} 
+                                onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isAmountPermanent', this.checked, ${catParam})">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="card-row">
+                        <input type="text" class="card-input card-input-notes" placeholder="הערה..." value="${item.notes || ''}" 
+                            oninput="setItemProp('${monthId}', '${type}', '${item.id}', 'notes', this.value, ${catParam})">
+                    </div>
+
+                    <div class="exclusion-box" onclick="event.stopPropagation();">
+                        <label style="display:flex; align-items:center; width:100%; justify-content:center; cursor:pointer;">
+                            <input type="checkbox" ${item.isExcluded ? 'checked' : ''} 
+                                onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isExcluded', this.checked, ${catParam}); renderApp(); recalculateMonthTotals('${monthId}')">
+                            <span>החרגה</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+        }
+
+        /* ///// 4. רנדור פאנל האימוג'ים המבוקש ללא טקסט בכלל */
+        function renderEmojiPickerPopover(monthId, type, itemId, categoryId = null) {
+            if (appState.activeEmojiPicker !== itemId) return '';
+            
+            const catParam = categoryId ? `'${categoryId}'` : 'null';
+            let popoverHtml = `<div class="emoji-picker-popover" onclick="event.stopPropagation();">`;
+            
+            EMOJI_LIST.forEach(emoji => {
+                popoverHtml += `<span class="emoji-option" onclick="selectEmojiInline('${monthId}', '${type}', '${itemId}', '${emoji}', ${catParam})">${emoji}</span>`;
+            });
+            
+            popoverHtml += `</div>`;
+            return popoverHtml;
+        }
+
+    </script>
+</body>
+</html>
