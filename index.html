@@ -646,15 +646,34 @@ auth.onAuthStateChanged(user => {
     }
 });
 
-// 6. סנכרון חי בזמן אמת (Real-time Sync)
+// 6. סנכרון חי בזמן אמת (Real-time Sync) - גרסה מוגנת מקריסות
 function startLiveSync() {
-    // הפונקציה הזו מקשיבה לענן. ברגע שאשתך תעדכן משהו, המסך שלך יתעדכן לבד!
     database.ref('family_budget').on('value', (snapshot) => {
-        const cloudData = snapshot.val();
-        if (cloudData) {
-            appState = cloudData;
+        let cloudData = snapshot.val();
+        
+        // אם הענן ריק לחלוטין (פעם ראשונה או איפוס), ניצור מבנה בסיסי
+        if (!cloudData) {
+            cloudData = { months: [] };
         }
-        // הרצת הציור של האפליקציה עם הנתונים הטריים מהענן
+        
+        appState = cloudData;
+        
+        // הגנה קריטית: אם פיירבייס מחק את מערך החודשים כי הוא התרוקן
+        if (!appState.months || !Array.isArray(appState.months)) {
+            appState.months = [];
+        }
+        
+        // לולאת הגנה על כל חודש בנפרד - מוודאת שרשימות ההוצאות וההכנסות קיימות תמיד
+        appState.months.forEach(month => {
+            if (!month.incomes || !Array.isArray(month.incomes)) month.incomes = [];
+            if (!month.categories || !Array.isArray(month.categories)) month.categories = [];
+        });
+        
+        // השלמת הגדרות תצוגה כלליות למניעת שגיאות undefined נוספות
+        if (!appState.globalExpandedCategories) appState.globalExpandedCategories = {};
+        if (appState.globalIncomesExpanded === undefined) appState.globalIncomesExpanded = true;
+        
+        // הרצת הציור של האפליקציה רק אחרי שהנתונים עברו סניטציה והם בטוחים
         if (typeof renderApp === 'function') {
             renderApp();
         }
