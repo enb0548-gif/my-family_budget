@@ -645,7 +645,6 @@ auth.onAuthStateChanged(user => {
         overlay.style.display = 'flex'; // מציגים את מסך הנעילה אם המשתמש התנתק
     }
 });
-
 // 6. סנכרון חי בזמן אמת (Real-time Sync) - גרסה מוגנת מקריסות
 function startLiveSync() {
     database.ref('family_budget').on('value', (snapshot) => {
@@ -663,10 +662,17 @@ function startLiveSync() {
             appState.months = [];
         }
         
-        // לולאת הגנה על כל חודש בנפרד - מוודאת שרשימות ההוצאות וההכנסות קיימות תמיד
+        // לולאת הגנה על כל חודש בנפרד - מוודאת שכל המערכים קיימים תמיד
         appState.months.forEach(month => {
             if (!month.incomes || !Array.isArray(month.incomes)) month.incomes = [];
             if (!month.categories || !Array.isArray(month.categories)) month.categories = [];
+            
+            // התיקון הקריטי: מעבר על כל קטגוריה ולוודא שמערך ההוצאות שלה קיים
+            month.categories.forEach(cat => {
+                if (!cat.expenses || !Array.isArray(cat.expenses)) {
+                    cat.expenses = [];
+                }
+            });
         });
         
         // השלמת הגדרות תצוגה כלליות למניעת שגיאות undefined נוספות
