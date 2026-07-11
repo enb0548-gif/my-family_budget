@@ -1007,10 +1007,15 @@ function createNewMonth() {
                 let totalIncome = 0;
                 let totalExpenses = 0;
 
-                month.incomes.forEach(i => { if (!i.isExcluded) totalIncome += i.amount; });
-                month.categories.forEach(c => {
+                // הגנה על לולאת הכנסות
+                (month.incomes || []).forEach(i => { if (!i.isExcluded) totalIncome += i.amount; });
+                
+                // הגנה על לולאת קטגוריות
+                (month.categories || []).forEach(c => {
                     let catSum = 0;
-                    c.expenses.forEach(e => { 
+                    
+                    // הגנה על לולאת הוצאות - התיקון המרכזי שמונע את הקריסה!
+                    (c.expenses || []).forEach(e => { 
                         if (!e.isExcluded) totalExpenses += e.amount; 
                         catSum += e.amount;
                     });
@@ -1209,7 +1214,7 @@ function createNewMonth() {
             
             popoverHtml += `</div>`;
             return popoverHtml;
-        
+        }
 
     </script>
 </body>
