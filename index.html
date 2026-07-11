@@ -893,8 +893,7 @@ currentExpenses.forEach(exp => {
             saveToStorage();
             renderApp();
         }
-
-        /* ///// 2. לוגיקת שינוי הרחבה/צמצום גלובלית לכל החודשים */
+/* ///// 2. לוגיקת שינוי הרחבה/צמצום גלובלית לכל החודשים */
         function toggleIncomeExpandGlobal(event) {
             if(event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON') return;
             appState.globalIncomesExpanded = !appState.globalIncomesExpanded;
@@ -964,7 +963,7 @@ currentExpenses.forEach(exp => {
             renderApp();
         }
 
-// משתנה עזר ופונקציה לסנכרון הגלילה בין כל החודשים ופס הגלילה התחתון
+        // משתנה עזר ופונקציה לסנכרון הגלילה בין כל החודשים ופס הגלילה התחתון
         let isSyncingScroll = false;
         function syncMonthScrolls(e) {
             if (isSyncingScroll) return;
@@ -986,24 +985,23 @@ currentExpenses.forEach(exp => {
         }
 
         function renderApp() {
-        
-    // הגנה מוחלטת בתחילת הציור מפני מערכים ריקים שהענן מחק
-    if (!appState || !appState.months) {
-        appState = { months: [] };
-    }
-    
-    // מעבר על כל החודשים והבטחה שכל המערכים הפנימיים קיימים לפני הציור
-    appState.months.forEach(month => {
-        if (!month.incomes || !Array.isArray(month.incomes)) month.incomes = [];
-        if (!month.categories || !Array.isArray(month.categories)) month.categories = [];
-        
-        // הגנה על תתי-קטגוריות (שורות ההוצאה בפועל)
-        month.categories.forEach(cat => {
-            if (!cat.items || !Array.isArray(cat.items)) cat.items = [];
-        });
-    });
+            
+            // הגנה מוחלטת בתחילת הציור מפני מערכים ריקים שהענן מחק
+            if (!appState || !appState.months) {
+                appState = { months: [] };
+            }
+            
+            // מעבר על כל החודשים והבטחה שכל המערכים הפנימיים קיימים לפני הציור
+            appState.months.forEach(month => {
+                if (!month.incomes || !Array.isArray(month.incomes)) month.incomes = [];
+                if (!month.categories || !Array.isArray(month.categories)) month.categories = [];
+                
+                // הגנה על תתי-קטגוריות (שורות ההוצאה בפועל - הותאם לשימוש ב-expenses)
+                month.categories.forEach(cat => {
+                    if (!cat.expenses || !Array.isArray(cat.expenses)) cat.expenses = [];
+                });
+            });
 
-    // ... כאן ממשיך שאר קוד הציור המקורי של renderApp שלך ...
             // שמירת מיקום הגלילה הנוכחי לפני הרינדור
             const firstRow = document.querySelector('.month-blocks-row');
             const savedScrollLeft = firstRow ? firstRow.scrollLeft : 0;
@@ -1178,7 +1176,8 @@ currentExpenses.forEach(exp => {
 
                     <div class="card-row">
                         <span class="currency-indicator">₪</span>
-                        <input type="number" class="card-input card-input-amount" placeholder="0" value="${item.amount || ''}" onchange="saveToStorage()">
+                        <input type="number" class="card-input card-input-amount" placeholder="0" value="${item.amount || ''}" 
+                            onchange="saveToStorage()" 
                             oninput="setItemProp('${monthId}', '${type}', '${item.id}', 'amount', parseFloat(this.value) || 0, ${catParam}); recalculateMonthTotals('${monthId}')">
                         
                         <label class="toggle-switch ${!item.isNamePermanent ? 'hidden-switch' : ''}" title="סכום קבוע">
