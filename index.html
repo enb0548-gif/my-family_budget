@@ -1157,56 +1157,54 @@ function createNewMonth() {
             }, 50);
         }
 
-        /* ///// 1+4. יצירת הריבוע הקומפקטי עם המבנה החדש והאימוג'י קליקר הצף */
         function renderSmallCard(monthId, type, item, categoryId = null) {
-            const catParam = categoryId ? `'${categoryId}'` : 'null';
-            return `
-                <div class="small-card ${item.isExcluded ? 'card-excluded' : ''}">
-                    <button class="btn-card-delete" onclick="openDeleteModal({type:'${type}', monthId:'${monthId}', categoryId:${catParam}, itemId:'${item.id}'})">×</button>
-                    
-                    <div class="card-row">
-                        <span class="card-emoji-disp" onclick="triggerEmojiPicker('${item.id}', event)">${item.emoji}</span>
-                        
-                        <input type="text" class="card-input card-input-name" placeholder="פריט..." value="${item.name}" 
-                            onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'name', this.value, ${catParam})">
-                        
-                        <label class="toggle-switch" title="שם קבוע">
-                            <input type="checkbox" ${item.isNamePermanent ? 'checked' : ''} 
-                                onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isNamePermanent', this.checked, ${catParam}); renderApp();">
-                            <span class="slider"></span>
-                        </label>
+    const catParam = categoryId ? `'${categoryId}'` : 'null';
+    return `
+        <div class="small-card ${item.isExcluded ? 'card-excluded' : ''}">
+            <button class="btn-card-delete" onclick="openDeleteModal({type:'${type}', monthId:'${monthId}', categoryId:${catParam}, itemId:'${item.id}'})">×</button>
+            
+            <div class="card-row">
+                <span class="card-emoji-disp" onclick="triggerEmojiPicker('${item.id}', event)">${item.emoji}</span>
+                
+                <input type="text" class="card-input card-input-name" placeholder="פריט..." value="${item.name}" 
+                    onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'name', this.value, ${catParam})">
+                
+                <label class="toggle-switch" title="שם קבוע">
+                    <input type="checkbox" ${item.isNamePermanent ? 'checked' : ''} 
+                        onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isNamePermanent', this.checked, ${catParam}); renderApp();">
+                    <span class="slider"></span>
+                </label>
 
-                        ${renderEmojiPickerPopover(monthId, type, item.id, categoryId)}
-                    </div>
+                ${renderEmojiPickerPopover(monthId, type, item.id, categoryId)}
+            </div>
 
-                    <div class="card-row">
-                        <span class="currency-indicator">₪</span>
-                        <input type="number" class="card-input card-input-amount" placeholder="0" value="${item.amount || ''}" onchange="saveToStorage()"
-                            onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'amount', parseFloat(this.value) || 0, ${catParam}); recalculateMonthTotals('${monthId}')">
-                        
-                        <label class="toggle-switch ${!item.isNamePermanent ? 'hidden-switch' : ''}" title="סכום קבוע">
-                            <input type="checkbox" ${item.isAmountPermanent ? 'checked' : ''} 
-                                onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isAmountPermanent', this.checked, ${catParam})">
-                            <span class="slider"></span>
-                        </label>
-                    </div>
+            <div class="card-row">
+                <span class="currency-indicator">₪</span>
+                <input type="number" class="card-input card-input-amount" placeholder="0" value="${item.amount || ''}" 
+                    onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'amount', parseFloat(this.value) || 0, ${catParam}); recalculateMonthTotals('${monthId}'); if(typeof saveToStorage === 'function') saveToStorage();">
+                
+                <label class="toggle-switch ${!item.isNamePermanent ? 'hidden-switch' : ''}" title="סכום קבוע">
+                    <input type="checkbox" ${item.isAmountPermanent ? 'checked' : ''} 
+                        onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isAmountPermanent', this.checked, ${catParam})">
+                    <span class="slider"></span>
+                </label>
+            </div>
 
-                    <div class="card-row">
-                        <input type="text" class="card-input card-input-notes" placeholder="הערה..." value="${item.notes || ''}" 
-                            onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'notes', this.value, ${catParam})">
-                    </div>
+            <div class="card-row">
+                <input type="text" class="card-input card-input-notes" placeholder="הערה..." value="${item.notes || ''}" 
+                    onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'notes', this.value, ${catParam})">
+            </div>
 
-                    <div class="exclusion-box" onclick="event.stopPropagation();">
-                        <label style="display:flex; align-items:center; width:100%; justify-content:center; cursor:pointer;">
-                            <input type="checkbox" ${item.isExcluded ? 'checked' : ''} 
-                                onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isExcluded', this.checked, ${catParam}); renderApp(); recalculateMonthTotals('${monthId}')">
-                            <span>החרגה</span>
-                        </label>
-                    </div>
-                </div>
-            `;
-        }
-
+            <div class="exclusion-box" onclick="event.stopPropagation();">
+                <label style="display:flex; align-items:center; width:100%; justify-content:center; cursor:pointer;">
+                    <input type="checkbox" ${item.isExcluded ? 'checked' : ''} 
+                        onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isExcluded', this.checked, ${catParam}); renderApp(); recalculateMonthTotals('${monthId}')">
+                    <span>החרגה</span>
+                </label>
+            </div>
+        </div>
+    `;
+}
         /* ///// 4. רנדור פאנל האימוג'ים המבוקש ללא טקסט בכלל */
         function renderEmojiPickerPopover(monthId, type, itemId, categoryId = null) {
             if (appState.activeEmojiPicker !== itemId) return '';
