@@ -804,6 +804,7 @@ function createNewMonth() {
             saveToStorage();
             renderApp();
         }
+        }
 
         function setItemProp(monthId, type, itemId, prop, value, categoryId = null) {
             const month = appState.months.find(m => m.id === monthId);
