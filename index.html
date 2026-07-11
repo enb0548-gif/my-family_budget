@@ -984,7 +984,6 @@ function createNewMonth() {
         }
 
         function renderApp() {
-        
     // הגנה מוחלטת בתחילת הציור מפני מערכים ריקים שהענן מחק
     if (!appState || !appState.months) {
         appState = { months: [] };
@@ -997,167 +996,170 @@ function createNewMonth() {
         
         // הגנה על תתי-קטגוריות (שורות ההוצאה בפועל)
         month.categories.forEach(cat => {
-            if (!cat.items || !Array.isArray(cat.items)) cat.items = [];
+            if (!cat.expenses || !Array.isArray(cat.expenses)) cat.expenses = [];
         });
     });
 
-    // ... כאן ממשיך שאר קוד הציור המקורי של renderApp שלך ...
-            // שמירת מיקום הגלילה הנוכחי לפני הרינדור
-            const firstRow = document.querySelector('.month-blocks-row');
-            const savedScrollLeft = firstRow ? firstRow.scrollLeft : 0;
+    // --- תיקון גלובלי לגלילה: שמירת מיקומי הגלילה של כל השורות בנפרד ---
+    const savedScrollPositions = [];
+    document.querySelectorAll('.month-blocks-row').forEach((row, index) => {
+        savedScrollPositions[index] = row.scrollLeft;
+    });
 
-            const container = document.getElementById('appMonthsContainer');
-            container.innerHTML = '';
+    const container = document.getElementById('appMonthsContainer');
+    if (!container) return;
+    container.innerHTML = '';
 
-            appState.months.forEach(month => {
-                let totalIncome = 0;
-                let totalExpenses = 0;
+    appState.months.forEach(month => {
+        let totalIncome = 0;
+        let totalExpenses = 0;
 
-                // הגנה על לולאת הכנסות
-                (month.incomes || []).forEach(i => { if (!i.isExcluded) totalIncome += i.amount; });
-                
-                // הגנה על לולאת קטגוריות
-                (month.categories || []).forEach(c => {
-                    let catSum = 0;
-                    
-                    // הגנה על לולאת הוצאות - התיקון המרכזי שמונע את הקריסה!
-                    (c.expenses || []).forEach(e => { 
-                        if (!e.isExcluded) totalExpenses += e.amount; 
-                        catSum += e.amount;
-                    });
-                    c.currentSum = catSum;
-                });
-
-                const balance = totalIncome - totalExpenses;
-                const monthSection = document.createElement('div');
-                monthSection.className = 'month-section-wrapper';
-
-                let monthHtml = `
-                    <hr class="month-divider">
-                    
-                    <div class="month-summary-bar">
-                        <input type="text" class="month-name-input" value="${month.name}" onchange="updateMonthName('${month.id}', this.value)">
-                        
-                        <div class="month-totals">
-                            <div class="total-item">הכנסות: <span class="text-income" id="total-inc-${month.id}">₪${totalIncome.toLocaleString()}</span></div>
-                            <div class="total-item">הוצאות: <span class="text-expense" id="total-exp-${month.id}">₪${totalExpenses.toLocaleString()}</span></div>
-                            <div class="total-item">מאזן: <span id="total-bal-${month.id}" class="${balance >= 0 ? 'balance-positive' : 'balance-negative'}">₪${balance.toLocaleString()}</span></div>
-                        </div>
-
-                        <button class="btn-delete-month" onclick="openDeleteModal({type:'month', monthId:'${month.id}'})">מחק חודש</button>
-                    </div>
-
-                    <div class="month-blocks-row">
-                `;
-
-                // --- בלוק הכנסות ---
-                const isIncExpanded = appState.globalIncomesExpanded !== false;
-                const incHeaderStyle = isIncExpanded 
-                    ? "display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px;" 
-                    : "display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%;";
-
-                monthHtml += `
-                    <div class="block-wrapper" style="border-top: 4px solid #16a34a;">
-                        <div class="block-header" onclick="toggleIncomeExpandGlobal(event)" style="${incHeaderStyle}">
-                            <div class="block-title-area">
-                                <span>💰</span>
-                                <span>הכנסות</span>
-                                <span>${isIncExpanded ? '▲' : '▼'}</span>
-                            </div>
-                            <span class="block-badge" id="badge-inc-${month.id}" style="background:#e2f0d9; color:#385723; margin-left: ${isIncExpanded ? '0' : 'auto'};">₪${totalIncome.toLocaleString()}</span>
-                        </div>
-                        
-                        <div class="cards-flex-container ${isIncExpanded ? '' : 'hidden-pane'}">
-                `;
-
-                if (isIncExpanded) {
-                    month.incomes.forEach(inc => { monthHtml += renderSmallCard(month.id, 'income', inc); });
-                    monthHtml += `<button class="btn-block-add-item" onclick="addNewItemInline('${month.id}', 'income')">+</button>`;
-                }
-
-                monthHtml += `</div></div>`;
-
-                // --- בלוק קטגוריות הוצאות ---
-                month.categories.forEach(cat => {
-                    const isCatExpanded = !!appState.globalExpandedCategories[cat.name];
-                    
-                    const catHeaderStyle = isCatExpanded
-                        ? "display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px; position: relative; padding-left: 22px !important;"
-                        : "display: flex; flex-direction: column; align-items: flex-start; gap: 4px; position: relative; padding-left: 22px !important;";
-
-                    monthHtml += `
-                        <div class="block-wrapper" style="border-top: 4px solid var(--primary-amber); background: #fefce8;">
-                            <div class="block-header" onclick="toggleCategoryExpandGlobal('${cat.name}', event)" style="${catHeaderStyle}">
-                                <div class="block-title-area">
-                                    <span class="card-emoji-disp" onclick="triggerEmojiPicker('${cat.id}', event)">${cat.emoji}</span>
-                                    <input type="text" class="block-title-input" value="${cat.name}" onchange="setItemProp('${month.id}', 'category', '${cat.id}', 'name', this.value)">
-                                    <span>${isCatExpanded ? '▲' : '▼'}</span>
-                                    ${renderEmojiPickerPopover(month.id, 'category', cat.id)}
-                                </div>
-                                
-                                <span class="block-badge" id="badge-cat-${cat.id}" style="background:var(--light-yellow); color:#92400e; margin-left: ${isCatExpanded ? '6px' : 'auto'};">₪${cat.currentSum.toLocaleString()}</span>
-                                
-                                <button class="btn-card-delete" style="position: absolute; top: 50%; transform: translateY(-50%); left: 14px; display: inline-flex; margin: 0;" onclick="openDeleteModal({type:'category', monthId:'${month.id}', categoryId:'${cat.id}'})">×</button>
-                            </div>
-                            
-                            <div class="cards-flex-container ${isCatExpanded ? '' : 'hidden-pane'}">
-                    `;
-
-                    if (isCatExpanded) {
-                        cat.expenses.forEach(exp => { monthHtml += renderSmallCard(month.id, 'expense', exp, cat.id); });
-                        monthHtml += `<button class="btn-block-add-item" onclick="addNewItemInline('${month.id}', 'expense', '${cat.id}')">+</button>`;
-                    }
-
-                    monthHtml += `
-                            </div>
-                        </div>
-                    `;
-                });
-
-                monthHtml += `
-                        <button class="btn-add-category-box" onclick="addNewCategoryInline('${month.id}')">+ קטגוריה חדשה</button>
-                    </div>
-                `;
-
-                monthSection.innerHTML = monthHtml;
-                container.appendChild(monthSection);
+        // הגנה על לולאת הכנסות
+        (month.incomes || []).forEach(i => { if (!i.isExcluded) totalIncome += i.amount; });
+        
+        // הגנה על לולאת קטגוריות
+        (month.categories || []).forEach(c => {
+            let catSum = 0;
+            
+            // הגנה על לולאת הוצאות
+            (c.expenses || []).forEach(e => { 
+                if (!e.isExcluded) totalExpenses += e.amount; 
+                catSum += e.amount;
             });
+            c.currentSum = catSum;
+        });
 
-            // החזרת מיקום הגלילה המדויק לכל החודשים וחיבור מאזין הגלילה
-            const rows = document.querySelectorAll('.month-blocks-row');
-            rows.forEach(row => {
-                row.scrollLeft = savedScrollLeft;
-                row.addEventListener('scroll', syncMonthScrolls);
-            });
+        const balance = totalIncome - totalExpenses;
+        const monthSection = document.createElement('div');
+        monthSection.className = 'month-section-wrapper';
 
-            // יצירת/עדכון פסי הגלילה הגלובלי המשותף בתחתית החלון לחלוטין
-            let globalScroll = document.getElementById('globalViewScrollbar');
-            if (!globalScroll) {
-                globalScroll = document.createElement('div');
-                globalScroll.id = 'globalViewScrollbar';
-                globalScroll.style = 'position: fixed; bottom: 0; left: 0; right: 0; overflow-x: auto; height: 14px; z-index: 9999; background: #f3f4f6; border-top: 1px solid #e5e7eb;';
+        let monthHtml = `
+            <hr class="month-divider">
+            
+            <div class="month-summary-bar">
+                <input type="text" class="month-name-input" value="${month.name}" onchange="updateMonthName('${month.id}', this.value)">
                 
-                const spacer = document.createElement('div');
-                spacer.id = 'globalViewScrollSpacer';
-                spacer.style.height = '1px';
-                
-                globalScroll.appendChild(spacer);
-                document.body.appendChild(globalScroll);
-                globalScroll.addEventListener('scroll', syncMonthScrolls);
-            }
+                <div class="month-totals">
+                    <div class="total-item">הכנסות: <span class="text-income" id="total-inc-${month.id}">₪${totalIncome.toLocaleString()}</span></div>
+                    <div class="total-item">הוצאות: <span class="text-expense" id="total-exp-${month.id}">₪${totalExpenses.toLocaleString()}</span></div>
+                    <div class="total-item">מאזן: <span id="total-bal-${month.id}" class="${balance >= 0 ? 'balance-positive' : 'balance-negative'}">₪${balance.toLocaleString()}</span></div>
+                </div>
 
-            // עדכון דינמי של רוחב הגלילה הפנימי של הפס הגלובלי
-            setTimeout(() => {
-                const latestFirstRow = document.querySelector('.month-blocks-row');
-                const spacer = document.getElementById('globalViewScrollSpacer');
-                if (latestFirstRow && spacer) {
-                    spacer.style.width = latestFirstRow.scrollWidth + 'px';
-                    globalScroll.scrollLeft = latestFirstRow.scrollLeft;
-                }
-            }, 50);
+                <button class="btn-delete-month" onclick="openDeleteModal({type:'month', monthId:'${month.id}'})">מחק חודש</button>
+            </div>
+
+            <div class="month-blocks-row">
+        `;
+
+        // --- בלוק הכנסות ---
+        const isIncExpanded = appState.globalIncomesExpanded !== false;
+        const incHeaderStyle = isIncExpanded 
+            ? "display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px;" 
+            : "display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%;";
+
+        monthHtml += `
+            <div class="block-wrapper" style="border-top: 4px solid #16a34a;">
+                <div class="block-header" onclick="toggleIncomeExpandGlobal(event)" style="${incHeaderStyle}">
+                    <div class="block-title-area">
+                        <span>💰</span>
+                        <span>הכנסות</span>
+                        <span>${isIncExpanded ? '▲' : '▼'}</span>
+                    </div>
+                    <span class="block-badge" id="badge-inc-${month.id}" style="background:#e2f0d9; color:#385723; margin-left: ${isIncExpanded ? '0' : 'auto'};">₪${totalIncome.toLocaleString()}</span>
+                </div>
+                
+                <div class="cards-flex-container ${isIncExpanded ? '' : 'hidden-pane'}">
+        `;
+
+        if (isIncExpanded) {
+            month.incomes.forEach(inc => { monthHtml += renderSmallCard(month.id, 'income', inc); });
+            monthHtml += `<button class="btn-block-add-item" onclick="addNewItemInline('${month.id}', 'income')">+</button>`;
         }
 
-        function renderSmallCard(monthId, type, item, categoryId = null) {
+        monthHtml += `</div></div>`;
+
+        // --- בלוק קטגוריות הוצאות ---
+        (month.categories || []).forEach(cat => {
+            const isCatExpanded = !!appState.globalExpandedCategories[cat.name];
+            
+            const catHeaderStyle = isCatExpanded
+                ? "display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 6px; position: relative; padding-left: 22px !important;"
+                : "display: flex; flex-direction: column; align-items: flex-start; gap: 4px; position: relative; padding-left: 22px !important;";
+
+            monthHtml += `
+                <div class="block-wrapper" style="border-top: 4px solid var(--primary-amber); background: #fefce8;">
+                    <div class="block-header" onclick="toggleCategoryExpandGlobal('${cat.name}', event)" style="${catHeaderStyle}">
+                        <div class="block-title-area">
+                            <span class="card-emoji-disp" onclick="triggerEmojiPicker('${cat.id}', event)">${cat.emoji}</span>
+                            <input type="text" class="block-title-input" value="${cat.name}" onchange="setItemProp('${month.id}', 'category', '${cat.id}', 'name', this.value)">
+                            <span>${isCatExpanded ? '▲' : '▼'}</span>
+                            ${renderEmojiPickerPopover(month.id, 'category', cat.id)}
+                        </div>
+                        
+                        <span class="block-badge" id="badge-cat-${cat.id}" style="background:var(--light-yellow); color:#92400e; margin-left: ${isCatExpanded ? '6px' : 'auto'};">₪${cat.currentSum.toLocaleString()}</span>
+                        
+                        <button class="btn-card-delete" style="position: absolute; top: 50%; transform: translateY(-50%); left: 14px; display: inline-flex; margin: 0;" onclick="openDeleteModal({type:'category', monthId:'${month.id}', categoryId:'${cat.id}'})">×</button>
+                    </div>
+                    
+                    <div class="cards-flex-container ${isCatExpanded ? '' : 'hidden-pane'}">
+            `;
+
+            if (isCatExpanded) {
+                (cat.expenses || []).forEach(exp => { monthHtml += renderSmallCard(month.id, 'expense', exp, cat.id); });
+                monthHtml += `<button class="btn-block-add-item" onclick="addNewItemInline('${month.id}', 'expense', '${cat.id}')">+</button>`;
+            }
+
+            monthHtml += `
+                    </div>
+                </div>
+            `;
+        });
+
+        monthHtml += `
+                <button class="btn-add-category-box" onclick="addNewCategoryInline('${month.id}')">+ קטגוריה חדשה</button>
+            </div>
+        `;
+
+        monthSection.innerHTML = monthHtml;
+        container.appendChild(monthSection);
+    });
+
+    // --- החזרת מיקומי הגלילה המדויקים לכל שורה בנפרד מונעת את הקפיצה המעצבנת ---
+    const rows = document.querySelectorAll('.month-blocks-row');
+    rows.forEach((row, index) => {
+        if (savedScrollPositions[index] !== undefined) {
+            row.scrollLeft = savedScrollPositions[index];
+        }
+        row.addEventListener('scroll', syncMonthScrolls);
+    });
+
+    // יצירת/עדכון פסי הגלילה הגלובלי
+    let globalScroll = document.getElementById('globalViewScrollbar');
+    if (!globalScroll) {
+        globalScroll = document.createElement('div');
+        globalScroll.id = 'globalViewScrollbar';
+        globalScroll.style = 'position: fixed; bottom: 0; left: 0; right: 0; overflow-x: auto; height: 14px; z-index: 9999; background: #f3f4f6; border-top: 1px solid #e5e7eb;';
+        
+        const spacer = document.createElement('div');
+        spacer.id = 'globalViewScrollSpacer';
+        spacer.style.height = '1px';
+        
+        globalScroll.appendChild(spacer);
+        document.body.appendChild(globalScroll);
+        globalScroll.addEventListener('scroll', syncMonthScrolls);
+    }
+
+    setTimeout(() => {
+        const latestFirstRow = document.querySelector('.month-blocks-row');
+        const spacer = document.getElementById('globalViewScrollSpacer');
+        if (latestFirstRow && spacer) {
+            spacer.style.width = latestFirstRow.scrollWidth + 'px';
+            globalScroll.scrollLeft = latestFirstRow.scrollLeft;
+        }
+    }, 50);
+}
+
+function renderSmallCard(monthId, type, item, categoryId = null) {
     const catParam = categoryId ? `'${categoryId}'` : 'null';
     return `
         <div class="small-card ${item.isExcluded ? 'card-excluded' : ''}">
@@ -1171,7 +1173,7 @@ function createNewMonth() {
                 
                 <label class="toggle-switch" title="שם קבוע">
                     <input type="checkbox" ${item.isNamePermanent ? 'checked' : ''} 
-                        onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isNamePermanent', this.checked, ${catParam}); renderApp();">
+                        onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isNamePermanent', this.checked, ${catParam});">
                     <span class="slider"></span>
                 </label>
 
@@ -1198,7 +1200,7 @@ function createNewMonth() {
             <div class="exclusion-box" onclick="event.stopPropagation();">
                 <label style="display:flex; align-items:center; width:100%; justify-content:center; cursor:pointer;">
                     <input type="checkbox" ${item.isExcluded ? 'checked' : ''} 
-                        onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isExcluded', this.checked, ${catParam}); renderApp(); recalculateMonthTotals('${monthId}')">
+                        onchange="setItemProp('${monthId}', '${type}', '${item.id}', 'isExcluded', this.checked, ${catParam});">
                     <span>החרגה</span>
                 </label>
             </div>
