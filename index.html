@@ -1124,13 +1124,31 @@ function createNewMonth() {
         container.appendChild(monthSection);
     });
 
-    // --- החזרת מיקומי הגלילה המדויקים לכל שורה בנפרד מונעת את הקפיצה המעצבנת ---
+    // --- החזרת מיקומי הגלילה המדויקים לכל שורה בנפרד (תיקון אגרסיבי לקפיצה ימינה) ---
     const rows = document.querySelectorAll('.month-blocks-row');
-    rows.forEach((row, index) => {
-        if (savedScrollPositions[index] !== undefined) {
-            row.scrollLeft = savedScrollPositions[index];
+    
+    // אנחנו משתמשים ב-requestAnimationFrame כדי שההחזרה תקרה לפני הציור הבא של המסך
+    requestAnimationFrame(() => {
+        rows.forEach((row, index) => {
+            if (savedScrollPositions[index] !== undefined) {
+                // קביעת המיקום מחדש
+                row.scrollLeft = savedScrollPositions[index];
+            }
+            
+            // חיבור מחדש של פונקציית הסנכרון לגלילה
+            row.removeEventListener('scroll', syncMonthScrolls); // מניעת כפילויות
+            row.addEventListener('scroll', syncMonthScrolls);
+        });
+
+        // עדכון פסי הגלילה הגלובלי בהתאם
+        const latestFirstRow = document.querySelector('.month-blocks-row');
+        const globalScroll = document.getElementById('globalViewScrollbar');
+        const spacer = document.getElementById('globalViewScrollSpacer');
+        
+        if (latestFirstRow && spacer && globalScroll) {
+            spacer.style.width = latestFirstRow.scrollWidth + 'px';
+            globalScroll.scrollLeft = latestFirstRow.scrollLeft;
         }
-        row.addEventListener('scroll', syncMonthScrolls);
     });
 
     // יצירת/עדכון פסי הגלילה הגלובלי
