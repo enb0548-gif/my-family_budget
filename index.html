@@ -740,8 +740,9 @@ function createNewMonth() {
                 const previousMonth = appState.months[0];
 
                 // העתקת הוצאות פנימיות שסומנו כקבועות (עם הגנה מפני מערך ריק)
-const currentExpenses = cat.expenses || [];
+
 currentExpenses.forEach(exp => {
+const currentExpenses = cat.expenses || [];
     if (exp.isNamePermanent) {
         newCat.expenses.push({
             id: 'exp_' + Math.random().toString(36).substr(2, 5),
