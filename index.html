@@ -739,18 +739,22 @@ function createNewMonth() {
             if (appState.months.length > 0) {
                 const previousMonth = appState.months[0];
 
-                // 1. העתקת הכנסות קבועות
-                previousMonth.incomes.forEach(inc => {
-                    if (inc.isNamePermanent) {
-                        newMonth.incomes.push({
-                            id: 'inc_' + Math.random().toString(36).substr(2, 5),
-                            emoji: inc.emoji, name: inc.name,
-                            amount: inc.isAmountPermanent ? inc.amount : 0,
-                            notes: inc.notes, isNamePermanent: inc.isNamePermanent,
-                            isAmountPermanent: inc.isAmountPermanent, isExcluded: inc.isExcluded
-                        });
-                    }
-                });
+                // העתקת הוצאות פנימיות שסומנו כקבועות (עם הגנה מפני מערך ריק)
+const currentExpenses = cat.expenses || [];
+currentExpenses.forEach(exp => {
+    if (exp.isNamePermanent) {
+        newCat.expenses.push({
+            id: 'exp_' + Math.random().toString(36).substr(2, 5),
+            emoji: exp.emoji, 
+            name: exp.name,
+            amount: exp.isAmountPermanent ? exp.amount : 0,
+            notes: exp.notes, 
+            isNamePermanent: exp.isNamePermanent,
+            isAmountPermanent: exp.isAmountPermanent, 
+            isExcluded: exp.isExcluded
+        });
+    }
+});
 
                 // 2. העתקה אוטומטית של *כל* הקטגוריות (ללא תלות בצ'קבוקס)
                 previousMonth.categories.forEach(cat => {
