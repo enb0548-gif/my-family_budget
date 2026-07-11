@@ -712,49 +712,71 @@ function saveToStorage() {
         }
 
 function createNewMonth() {
-            const monthNames = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
-            let nextName = "חודש חדש";
-            
-            if (appState.months.length > 0) {
-                const lastMonth = appState.months[0];
-                const parts = lastMonth.name.split(' ');
-                if (parts.length === 2) {
-                    let idx = monthNames.indexOf(parts[0]);
-                    let year = parseInt(parts[1]);
-                    if (idx !== -1) {
-                        idx++;
-                        if (idx >= 12) { idx = 0; year++; }
-                        nextName = `${monthNames[idx]} ${year}`;
-                    }
-                }
+    const monthNames = ["ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני", "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר"];
+    let nextName = "חודש חדש";
+    
+    if (appState.months.length > 0) {
+        const lastMonth = appState.months[0];
+        const parts = lastMonth.name.split(' ');
+        if (parts.length === 2) {
+            let idx = monthNames.indexOf(parts[0]);
+            let year = parseInt(parts[1]);
+            if (idx !== -1) {
+                idx++;
+                if (idx >= 12) { idx = 0; year++; }
+                nextName = `${monthNames[idx]} ${year}`;
             }
+        }
+    }
 
-            const newMonth = {
-                id: 'm_' + Math.random().toString(36).substr(2, 5),
-                name: nextName,
-                incomes: [],
-                categories: []
+    const newMonth = {
+        id: 'm_' + Math.random().toString(36).substr(2, 5),
+        name: nextName,
+        incomes: [],
+        categories: []
+    };
+
+    if (appState.months.length > 0) {
+        const previousMonth = appState.months[0];
+
+        // מעבר תקין על כל הקטגוריות של החודש הקודם
+        previousMonth.categories.forEach(cat => {
+            const newCat = {
+                id: 'cat_' + Math.random().toString(36).substr(2, 5),
+                emoji: cat.emoji, 
+                name: cat.name, 
+                notes: cat.notes,
+                isNamePermanent: true, 
+                expenses: []
             };
 
-            if (appState.months.length > 0) {
-                const previousMonth = appState.months[0];
+            // הגנה מפני מערך הוצאות ריק או לא מוגדר בקטגוריית המקור
+            const currentExpenses = cat.expenses || [];
+            
+            // העתקת ההוצאות שסומנו כקבועות אל תוך הקטגוריה החדשה
+            currentExpenses.forEach(exp => {
+                if (exp.isNamePermanent) {
+                    newCat.expenses.push({
+                        id: 'exp_' + Math.random().toString(36).substr(2, 5),
+                        emoji: exp.emoji, 
+                        name: exp.name,
+                        amount: exp.isAmountPermanent ? exp.amount : 0,
+                        notes: exp.notes, 
+                        isNamePermanent: exp.isNamePermanent,
+                        isAmountPermanent: exp.isAmountPermanent, 
+                        isExcluded: exp.isExcluded
+                    });
+                }
+            });
 
-                // העתקת הוצאות פנימיות שסומנו כקבועות (עם הגנה מפני מערך ריק)
-const currentExpenses = cat.expenses || [];
-currentExpenses.forEach(exp => {
-    if (exp.isNamePermanent) {
-        newCat.expenses.push({
-            id: 'exp_' + Math.random().toString(36).substr(2, 5),
-            emoji: exp.emoji, 
-            name: exp.name,
-            amount: exp.isAmountPermanent ? exp.amount : 0,
-            notes: exp.notes, 
-            isNamePermanent: exp.isNamePermanent,
-            isAmountPermanent: exp.isAmountPermanent, 
-            isExcluded: exp.isExcluded
+            newMonth.categories.push(newCat);
         });
     }
-});
+
+    appState.months.unshift(newMonth);
+    saveToStorage();
+    renderApp();
+}
 
                 // 2. העתקה אוטומטית של *כל* הקטגוריות (ללא תלות בצ'קבוקס)
                 previousMonth.categories.forEach(cat => {
