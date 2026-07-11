@@ -739,7 +739,6 @@ function createNewMonth() {
     if (appState.months.length > 0) {
         const previousMonth = appState.months[0];
 
-        // מעבר תקין על כל הקטגוריות של החודש הקודם
         previousMonth.categories.forEach(cat => {
             const newCat = {
                 id: 'cat_' + Math.random().toString(36).substr(2, 5),
@@ -750,10 +749,8 @@ function createNewMonth() {
                 expenses: []
             };
 
-            // הגנה מפני מערך הוצאות ריק או לא מוגדר בקטגוריית המקור
             const currentExpenses = cat.expenses || [];
             
-            // העתקת ההוצאות שסומנו כקבועות אל תוך הקטגוריה החדשה
             currentExpenses.forEach(exp => {
                 if (exp.isNamePermanent) {
                     newCat.expenses.push({
