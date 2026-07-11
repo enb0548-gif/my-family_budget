@@ -1181,7 +1181,7 @@ function createNewMonth() {
 
                     <div class="card-row">
                         <span class="currency-indicator">₪</span>
-                        <input type="number" class="card-input card-input-amount" placeholder="0" value="${item.amount || ''}" onchange="saveToStorage()">
+                        <input type="number" class="card-input card-input-amount" placeholder="0" value="${item.amount || ''}" onchange="saveToStorage()"
                             oninput="setItemProp('${monthId}', '${type}', '${item.id}', 'amount', parseFloat(this.value) || 0, ${catParam}); recalculateMonthTotals('${monthId}')">
                         
                         <label class="toggle-switch ${!item.isNamePermanent ? 'hidden-switch' : ''}" title="סכום קבוע">
